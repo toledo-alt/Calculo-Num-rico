@@ -1,0 +1,620 @@
+
+item 3
+
+jacobi α = 4 e β = 1
+
+import numpy as np
+
+from scipy.sparse import csc_matrix, diags, tril, triu
+
+from scipy.sparse.linalg import spsolve
+
+from numpy.linalg import norm
+
+import matplotlib.pyplot as plt
+
+​
+
+​
+
+def matriz_tridiagonal(tam, a=4, b=1):
+
+    diag_principal = a * np.ones(tam)
+
+    diag_lateral = b * np.ones(tam - 1)
+
+    A = diags([diag_lateral, diag_principal, diag_lateral], [-1, 0, 1])
+
+    return csc_matrix(A)
+
+​
+
+​
+
+def metodo_jacobi(matA, vetB, chute_inicial, toler=1e-6, limite=200):
+
+​
+
+    print("\n=== Execução do Método de Jacobi ===")
+
+    print("it   norma_res      norma_rel")
+
+    print("--   -------------  -------------")
+
+​
+
+    A = csc_matrix(matA)
+
+    b = np.array(vetB, float)
+
+    x_prev = np.array(chute_inicial, float)
+
+​
+
+    D = diags(A.diagonal())
+
+    parte_inf = tril(A, -1)
+
+    parte_sup = triu(A, 1)
+
+    resto = parte_inf + parte_sup
+
+​
+
+    historico_r = []
+
+    historico_rel = []
+
+​
+
+    for it in range(1, limite + 1):
+
+​
+
+        termo = b - resto @ x_prev
+
+        x_atual = spsolve(D, termo)
+
+​
+
+        erro_r = norm(b - A @ x_atual, np.inf)
+
+        erro_rel = norm(x_atual - x_prev, np.inf) / max(norm(x_atual, np.inf), toler)
+
+​
+
+        historico_r.append(erro_r)
+
+        historico_rel.append(erro_rel)
+
+​
+
+        print(f"{it:<4d} {erro_r:13.5E}  {erro_rel:13.5E}")
+
+​
+
+        x_prev = x_atual.copy()
+
+​
+
+        if erro_r < toler and erro_rel < toler:
+
+            break
+
+​
+
+    return x_atual, historico_r, historico_rel
+
+​
+
+​
+
+def graficos_jacobi(residuos, relativos):
+
+​
+
+    plt.figure(figsize=(7, 4))
+
+    plt.plot(residuos, marker='o')
+
+    plt.yscale("log")
+
+    plt.title("Jacobi – Erro do Resíduo")
+
+    plt.xlabel("Iterações")
+
+    plt.ylabel("normres")
+
+    plt.grid(True)
+
+    plt.show()
+
+​
+
+    plt.figure(figsize=(7, 4))
+
+    plt.plot(relativos, marker='o', color='orange')
+
+    plt.yscale("log")
+
+    plt.title("Jacobi – Erro Relativo")
+
+    plt.xlabel("Iterações")
+
+    plt.ylabel("normrel")
+
+    plt.grid(True)
+
+    plt.show()
+
+​
+
+​
+
+if __name__ == "__main__":
+
+​
+
+    n = 20
+
+    alfa = 4
+
+    beta = 1
+
+​
+
+    A = matriz_tridiagonal(n, alfa, beta)
+
+    b = np.ones(n)
+
+    x0 = np.zeros(n)
+
+​
+
+    sol, lista_res, lista_rel = metodo_jacobi(A, b, x0)
+
+
+    graficos_jacobi(lista_res, lista_rel)
+
+
+
+
+
+Gauss-Seidel α = 4 e β = 1
+
+import numpy as np
+
+from scipy.sparse import csc_matrix, diags, tril, triu
+
+from scipy.sparse.linalg import spsolve
+
+from numpy.linalg import norm
+
+import matplotlib.pyplot as plt
+
+​
+
+​
+
+def gerar_matriz(n, alfa=4, beta=1):
+
+    d = alfa * np.ones(n)
+
+    o = beta * np.ones(n - 1)
+
+    return diags([o, d, o], [-1, 0, 1]).tocsc()
+
+​
+
+​
+
+def executa_seidel(A, b, x_inicial, eps=1e-6, max_iter=200):
+
+​
+
+    print("\n=== Execução do Método de Gauss-Seidel ===")
+
+    print("it   normres        normrel")
+
+    print("--   -------------  -------------")
+
+​
+
+    A = csc_matrix(A)
+
+    b = np.array(b, float)
+
+    x_ant = np.array(x_inicial, float)
+
+​
+
+    DL = tril(A, 0)
+
+    U  = triu(A, 1)
+
+​
+
+    hist_res = []
+
+    hist_rel = []
+
+​
+
+    for it in range(1, max_iter + 1):
+
+​
+
+        rhs = b - U @ x_ant
+
+        x_novo = spsolve(DL, rhs)
+
+​
+
+        e_res = norm(b - A @ x_novo, np.inf)
+
+        e_rel = norm(x_novo - x_ant, np.inf) / max(norm(x_novo, np.inf), eps)
+
+​
+
+        hist_res.append(e_res)
+
+        hist_rel.append(e_rel)
+
+​
+
+        print(f"{it:<4d} {e_res:13.5E}  {e_rel:13.5E}")
+
+​
+
+        x_ant = x_novo.copy()
+
+​
+
+        if e_res < eps and e_rel < eps:
+
+            break
+
+​
+
+    return x_novo, hist_res, hist_rel
+
+​
+
+​
+
+def plotar_seidel(res, rel):
+
+​
+
+    plt.figure(figsize=(7, 4))
+
+    plt.plot(res, marker="s", color="red")
+
+    plt.yscale("log")
+
+    plt.title("Gauss-Seidel – Erro do Resíduo")
+
+    plt.xlabel("Iterações")
+
+    plt.ylabel("normres")
+
+    plt.grid(True)
+
+    plt.show()
+
+​
+
+    plt.figure(figsize=(7, 4))
+
+    plt.plot(rel, marker="s", color="purple")
+
+    plt.yscale("log")
+
+    plt.title("Gauss-Seidel – Erro Relativo")
+
+    plt.xlabel("Iterações")
+
+    plt.ylabel("normrel")
+
+    plt.grid(True)
+
+    plt.show()
+
+​
+
+​
+
+if __name__ == "__main__":
+
+​
+
+    tamanho = 20
+
+    a = 4
+
+    b = 1
+
+​
+
+    A = gerar_matriz(tamanho, a, b)
+
+    vetor = np.ones(tamanho)
+
+    chute = np.zeros(tamanho)
+
+​
+
+    solucao, erros_r, erros_rel = executa_seidel(A, vetor, chute)
+
+    plotar_seidel(erros_r, erros_rel)
+
+​
+
+item 4 ) 
+Jacobi α = 1 e β = 1
+import numpy as np
+
+from scipy.sparse import csc_matrix, diags, tril, triu
+
+from scipy.sparse.linalg import spsolve
+
+from numpy.linalg import norm
+
+import matplotlib.pyplot as plt
+
+​
+
+​
+
+def matriz_tridiagonal(tam, a=4, b=1):
+
+    diag_principal = a * np.ones(tam)
+
+    diag_lateral = b * np.ones(tam - 1)
+
+    A = diags([diag_lateral, diag_principal, diag_lateral], [-1, 0, 1])
+
+    return csc_matrix(A)
+
+​
+
+​
+
+def metodo_jacobi(matA, vetB, chute_inicial, toler=1e-6, limite=200):
+
+​
+
+    print("\n=== Execução do Método de Jacobi ===")
+
+    print("it   norma_res      norma_rel")
+
+    print("--   -------------  -------------")
+
+​
+
+    A = csc_matrix(matA)
+
+    b = np.array(vetB, float)
+
+    x_prev = np.array(chute_inicial, float)
+
+​
+
+    D = diags(A.diagonal())
+
+    parte_inf = tril(A, -1)
+
+    parte_sup = triu(A, 1)
+
+    resto = parte_inf + parte_sup
+
+​
+
+    historico_r = []
+
+    historico_rel = []
+
+​
+
+    for it in range(1, limite + 1):
+
+​
+
+        termo = b - resto @ x_prev
+
+        x_atual = spsolve(D, termo)
+
+​
+
+        erro_r = norm(b - A @ x_atual, np.inf)
+
+        erro_rel = norm(x_atual - x_prev, np.inf) / max(norm(x_atual, np.inf), toler)
+
+​
+
+        historico_r.append(erro_r)
+
+        historico_rel.append(erro_rel)
+
+​
+
+        print(f"{it:<4d} {erro_r:13.5E}  {erro_rel:13.5E}")
+
+​
+
+        x_prev = x_atual.copy()
+
+​
+
+        if erro_r < toler and erro_rel < toler:
+
+            break
+
+​
+
+    return x_atual, historico_r, historico_rel
+
+​
+
+​
+
+def graficos_jacobi(residuos, relativos):
+
+​
+
+    plt.figure(figsize=(7, 4))
+
+    plt.plot(residuos, marker='o')
+
+    plt.yscale("log")
+
+    plt.title("Jacobi – Erro do Resíduo")
+
+    plt.xlabel("Iterações")
+
+    plt.ylabel("normres")
+
+    plt.grid(True)
+
+    plt.show()
+
+​
+
+    plt.figure(figsize=(7, 4))
+
+    plt.plot(relativos, marker='o', color='orange')
+
+    plt.yscale("log")
+
+    plt.title("Jacobi – Erro Relativo")
+
+    plt.xlabel("Iterações")
+
+    plt.ylabel("normrel")
+
+    plt.grid(True)
+
+    plt.show()
+
+​
+
+​
+
+if __name__ == "__main__":
+
+​
+
+    n = 20
+
+    alfa = 1
+
+    beta = 1
+
+​
+
+    A = matriz_tridiagonal(n, alfa, beta)
+
+    b = np.ones(n)
+
+    x0 = np.zeros(n)
+
+​
+
+    sol, lista_res, lista_rel = metodo_jacobi(A, b, x0)
+
+    graficos_jacobi(lista_res, lista_rel)
+
+
+
+
+Seidel α = 1 e β = 1
+
+
+import numpy as np
+from scipy.sparse import csc_matrix, diags, tril, triu
+from scipy.sparse.linalg import spsolve
+from numpy.linalg import norm
+import matplotlib.pyplot as plt
+
+
+def gerar_matriz(n, alfa=4, beta=1):
+    d = alfa * np.ones(n)
+    o = beta * np.ones(n - 1)
+    return diags([o, d, o], [-1, 0, 1]).tocsc()
+
+
+def executa_seidel(A, b, x_inicial, eps=1e-6, max_iter=200):
+
+    print("\n=== Execução do Método de Gauss-Seidel ===")
+    print("it   normres        normrel")
+    print("--   -------------  -------------")
+
+    A = csc_matrix(A)
+    b = np.array(b, float)
+    x_ant = np.array(x_inicial, float)
+
+    DL = tril(A, 0)
+    U  = triu(A, 1)
+
+    hist_res = []
+    hist_rel = []
+
+    for it in range(1, max_iter + 1):
+
+        rhs = b - U @ x_ant
+        x_novo = spsolve(DL, rhs)
+
+        e_res = norm(b - A @ x_novo, np.inf)
+        e_rel = norm(x_novo - x_ant, np.inf) / max(norm(x_novo, np.inf), eps)
+
+        hist_res.append(e_res)
+        hist_rel.append(e_rel)
+
+        print(f"{it:<4d} {e_res:13.5E}  {e_rel:13.5E}")
+
+        x_ant = x_novo.copy()
+
+        if e_res < eps and e_rel < eps:
+            break
+
+    return x_novo, hist_res, hist_rel
+
+
+def plotar_seidel(res, rel):
+
+    plt.figure(figsize=(7, 4))
+    plt.plot(res, marker="s", color="red")
+    plt.yscale("log")
+    plt.title("Gauss-Seidel – Erro do Resíduo")
+    plt.xlabel("Iterações")
+    plt.ylabel("normres")
+    plt.grid(True)
+    plt.show()
+
+    plt.figure(figsize=(7, 4))
+    plt.plot(rel, marker="s", color="purple")
+    plt.yscale("log")
+    plt.title("Gauss-Seidel – Erro Relativo")
+    plt.xlabel("Iterações")
+    plt.ylabel("normrel")
+    plt.grid(True)
+    plt.show()
+
+
+if __name__ == "__main__":
+
+    tamanho = 20
+    a = 1
+    b = 1
+
+    A = gerar_matriz(tamanho, a, b)
+    vetor = np.ones(tamanho)
+    chute = np.zeros(tamanho)
+
+    solucao, erros_r, erros_rel = executa_seidel(A, vetor, chute)
+    plotar_seidel(erros_r, erros_rel)
+
+Justificativa : Com α = 1 e β = 1, a estrutura da matriz faz com que ela perca a característica que permite a convergência dos métodos iterativos. Por isso, as iterações não estabilizam e os erros não diminuem
+
+
+
