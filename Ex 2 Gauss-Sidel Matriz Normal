@@ -1,0 +1,54 @@
+import scipy as scp
+import numpy as np
+from scipy.sparse import csr_matrix, tril, triu, diags,csc_matrix
+from scipy.sparse.linalg import spsolve 
+
+
+def gaussSeidel(A, b, x0, eps=1e-6, maxit=200):
+    print("k    normres         normrel")
+    print("--   --------------  --------------")
+
+    A = csc_matrix(A)
+    x_ant = x0.copy()
+
+    DL = tril(A, 0)  # diagonal + parte inferior
+    U  = triu(A, 1)  # parte superior
+
+    for k in range(1, maxit + 1):
+        rhs = b - U @ x_ant
+        x = spsolve(DL, rhs)
+
+        Eres = np.linalg.norm(b - A @ x, np.inf)
+        Erel = np.linalg.norm(x - x_ant, np.inf) / max(np.linalg.norm(x, np.inf), eps)
+
+        print(f"{k:<3d} {Eres:14.5E}  {Erel:14.5E}")
+
+        if Eres < eps and Erel < eps:
+            break
+
+        x_ant = x.copy()
+
+    return x, Eres, Erel
+
+#Ordem das equações F1 F2 f2 f3 F3 f5 f1 f4 na matriz
+A = np.array([
+    [-1,  np.sqrt(2)/2,  1,               0,   0,  0,  0,  0],  # (1h)
+    [ 0,  np.sqrt(2)/2,  0,               0,   0,  0, -1,  0],  # (1v)
+    [ 0, -np.sqrt(2)/2,  0,  np.sqrt(3)/2, 0,  0,  0,  0],      # (2h)
+    [ 0, -np.sqrt(2)/2,  0,          -1/2, -1, 0,  0,  0],      # (2v)
+    [ 0,  0,            -1,             0,  0,  1,  0,  0],      # (3h)
+    [ 0,  0,             0,             0,  1,  0,  0,  0],      # (3v)
+    [ 0,  0,             0, -np.sqrt(3)/2, 0, -1,  0,  0],      # (4h)
+    [ 0,  0,             0,           1/2, 0,  0,  0, -1]       # (4v)
+], float)
+
+
+b = np.array([0, 0, 0, 0, 0, 10000, 0, 0], float)
+
+matrizEsparsa = csr_matrix(A)
+
+x0 = np.zeros(8)
+
+gaussSeidel(matrizEsparsa, b, x0, 0.5, 100)
+
+gaussSeidel(matrizEsparsa, b, x0, 0.5, 100)
