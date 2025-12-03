@@ -1,23 +1,24 @@
 import scipy as scp
 import numpy as np
-from scipy.sparse import csr_matrix, tril, triu, diags
+from scipy.sparse import csr_matrix, tril, triu, diags, csc_matrix
 from scipy.sparse.linalg import spsolve 
 
 
 def gaussJacobi(matrizA, vetorB, x0, tolerancia, maxit):
     print("k     normres      normrel")
     print("---  ---------     -------------")
+    A = csc_matrix(matrizA)
     k = 0
     Erel = 1
     Eres = 1
-    L = tril(matrizA, -1)
-    D = diags(matrizA.diagonal())
-    U = triu(matrizA, 1)
+    L = tril(A, -1)
+    D = diags(A.diagonal())
+    U = triu(A, 1)
     M = L+U
     x = x0.copy()
     while Erel > tolerancia and Eres > tolerancia and k < maxit:
         x = spsolve(D, vetorB - M @ x)
-        Eres = np.linalg.norm(vetorB - matrizA @ x, np.inf)
+        Eres = np.linalg.norm(vetorB - A @ x, np.inf)
         Erel = np.linalg.norm(x - x0, np.inf)/np.linalg.norm(x, np.inf)
         x0 = x.copy()
         k = k+1
