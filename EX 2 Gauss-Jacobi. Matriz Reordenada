@@ -11,33 +11,42 @@ def gaussJacobi(matrizA, vetorB, x0, tolerancia, maxit):
     Erel = 1
     Eres = 1
     L = tril(matrizA, -1)
-    D = matrizA.diagonal()
+    D = diags(matrizA.diagonal())
     U = triu(matrizA, 1)
     M = L+U
     x = x0.copy()
     while Erel > tolerancia and Eres > tolerancia and k < maxit:
-        x = vetorB - M @ x0/D
+        x = spsolve(D, vetorB - M @ x)
         Eres = np.linalg.norm(vetorB - matrizA @ x, np.inf)
         Erel = np.linalg.norm(x - x0, np.inf)/np.linalg.norm(x, np.inf)
         x0 = x.copy()
         k = k+1
         print(k,     Eres,        Erel)
     return x, Eres, Erel
-
+#Ordem das equações F1 F2 f2 f3 F3 f5 f1 f4 na matriz
 A = np.array([
-    [ 1, 0,-1, 0, 0, 0,-np.sqrt(2)/2, 0],              # (1h)
-    [ 0, 1, 0, 0, 0, 0,-np.sqrt(2)/2, 0],              # (1v)
-    [ 0, 0, 1, 0, 0,-1, 0, 0],                         # (3h)
-    [ 0, 0, 0, 1, 0, 0, 0, 0],                         # (3v)
-    [ 0, 0, 0, 0, 1, 0, 0,-1/2],                       # (4v)
-    [ 0, 0, 0, 0, 0, 1, 0,np.sqrt(3)/2],               # (4h)
-    [ 0, 0, 0, 0, 0, 0, 1,-np.sqrt(3/2)],              # (2h)
-    [ 0, 0, 0, 2, 0, 0,np.sqrt(2), 1]                  # (2v)
+    [ 1,  0, -1,  0,  0,  0, -np.sqrt(2)/2,  0],    # (1h)
+    [ 0,  1,  0,  0,  0,  0, -np.sqrt(2)/2,  0],    # (1v)
+    [ 0,  0,  1,  0,  0, -1,  0,  0],               # (3h)
+    [ 0,  0,  0,  1,  0,  0,  0,  0],               # (3v)
+    [ 0,  0,  0,  0,  1,  0,  0, -1/2],             # (4v)
+    [ 0,  0,  0,  0,  0,  1,  0,  np.sqrt(3)/2],    # (4h)
+    [ 0,  0,  0,  0,  0,  0,  1, -np.sqrt(3)/2],    # (2h)
+    [ 0,  0,  0,  2,  0,  0,  np.sqrt(2),  1]       # (2v)
 ], float)
 
 matrizEsparsa = csr_matrix(A)
 
-b = np.array([0,0,0,10000,0,0,0,0], float)
+b = np.array([
+    0,      # (1h)
+    0,      # (1v)
+    0,      # (3h)
+    10000,  # (3v)
+    0,      # (4v)
+    0,      # (4h)
+    0,      # (2h)
+    0       # (2v)
+], float)
 
 x0 = np.zeros(8)
 
